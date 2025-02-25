@@ -4,7 +4,7 @@ from typing import Dict, Any
 import hackathon_linc as lh
 import random
 
-lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
+# lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
 class DataPoller:
     def __init__(self, func_poll_interval: tuple):
@@ -30,11 +30,11 @@ class DataPoller:
                         self.cache.clear()  # Clear the dictionary
                         self.cache.update({"value": result})  # Update with new data
                     elif isinstance(self.cache, multiprocessing.managers.ListProxy):
-                        self.cache.clear()  # Clear the list
+                        self.cache[:] = []  # Clear the list
                         self.cache.append(result)  # Update with new data
                     else:
                         self.cache.value = result  
-                print(f'Polled {func_name}')
+                # print(f'Polled {func_name}')
             except Exception as e:
                 print(f'Error polling {func_name}: {e}')
             
@@ -60,56 +60,52 @@ class DataPoller:
             else:
                 return self.cache.value  # Return the value from the shared Value
 
-if __name__ == "__main__":
-    polling_intervals_completed_orders = ("get_completed_orders", 8, multiprocessing.Manager().dict())
-    polling_intervals_pending_orders = ("get_pending_orders", 15, multiprocessing.Manager().dict())
-    polling_intervals_stoploss_orders = ("get_stoploss_orders", 5, multiprocessing.Manager().dict())
-    polling_intervals_balance = ("get_balance", 11, multiprocessing.Value('d', 0.0))
-    polling_intervals_all_tickers = ("get_all_tickers", 5, multiprocessing.Manager().list())
-    polling_intervals_all_orders = ("get_all_orders", 12, multiprocessing.Manager().dict())
-    polling_intervals_get_portfolio = ("get_portfolio", 0.1, multiprocessing.Manager().dict())
-    polling_intervals_get_current_price = ("get_current_price", 0.1, multiprocessing.Manager().dict())
+# if __name__ == "__main__":
+#     polling_intervals_completed_orders = ("get_completed_orders", 8, multiprocessing.Manager().dict())
+#     data_poller_completed_orders = DataPoller(polling_intervals_completed_orders)
+#     data_poller_completed_orders.start_polling()
 
-    data_poller_completed_orders = DataPoller(polling_intervals_completed_orders)
-    data_poller_completed_orders.start_polling()
+#     polling_intervals_pending_orders = ("get_pending_orders", 15, multiprocessing.Manager().dict())
+#     data_poller_pending_orders = DataPoller(polling_intervals_pending_orders)
+#     data_poller_pending_orders.start_polling()
 
-    data_poller_pending_orders = DataPoller(polling_intervals_pending_orders)
-    data_poller_pending_orders.start_polling()
+#     polling_intervals_stoploss_orders = ("get_stoploss_orders", 5, multiprocessing.Manager().dict())
+#     data_poller_stoploss_orders = DataPoller(polling_intervals_stoploss_orders)
+#     data_poller_stoploss_orders.start_polling()
 
-    data_poller_stoploss_orders = DataPoller(polling_intervals_stoploss_orders)
-    data_poller_stoploss_orders.start_polling()
+#     polling_intervals_balance = ("get_balance", 11, multiprocessing.Value('d', 0.0))
+#     data_poller_balance = DataPoller(polling_intervals_balance)
+#     data_poller_balance.start_polling()
 
-    data_poller_balance = DataPoller(polling_intervals_balance)
-    data_poller_balance.start_polling()
+#     polling_intervals_all_tickers = ("get_all_tickers", 5, multiprocessing.Manager().list())
+#     data_poller_all_tickers = DataPoller(polling_intervals_all_tickers)
+#     data_poller_all_tickers.start_polling()
 
-    data_poller_all_tickers = DataPoller(polling_intervals_all_tickers)
-    data_poller_all_tickers.start_polling()
+#     polling_intervals_all_orders = ("get_all_orders", 12, multiprocessing.Manager().dict())
+#     data_poller_all_orders = DataPoller(polling_intervals_all_orders)
+#     data_poller_all_orders.start_poll
 
-    data_poller_all_orders = DataPoller(polling_intervals_all_orders)
-    data_poller_all_orders.start_polling()
+#     polling_intervals_get_portfolio = ("get_portfolio", 0.1, multiprocessing.Manager().dict())
+#     data_poller_get_portfolio = DataPoller(polling_intervals_get_portfolio)
+#     data_poller_get_portfolio.start_polling()
 
-    data_poller_get_portfolio = DataPoller(polling_intervals_get_portfolio)
-    data_poller_get_portfolio.start_polling()
+#     polling_intervals_get_current_price = ("get_current_price", 0.1, multiprocessing.Manager().dict())
+#     data_poller_get_current_price = DataPoller(polling_intervals_get_current_price)
+#     data_poller_get_current_price.start_polling()
 
-    data_poller_get_current_price = DataPoller(polling_intervals_get_current_price)
-    data_poller_get_current_price.start_polling()
-
-
-    try:
-        while True:
-            cached_data =  data_poller_get_current_price.get_cached_data()
-            print(cached_data)
-            print("QUARTER SECOND")
-            time.sleep(0.25)
-    except KeyboardInterrupt:
-        data_poller_completed_orders.stop_polling()
-        data_poller_pending_orders.stop_polling()
-        data_poller_stoploss_orders.stop_polling()
-        data_poller_balance.stop_polling()
-        data_poller_all_tickers.stop_polling()
-        data_poller_all_orders.stop_polling()
-        data_poller_get_portfolio.stop_polling()
-        data_poller_get_current_price.stop_polling()
-
-        # data_poller_slow.stop_polling()
-        # data_poller_fast.stop_polling()
+# # This is where we would integrate with our main trading logic and user input etc
+#     try:
+#         while True:
+#             cached_data =  data_poller_get_current_price.get_cached_data()
+#             print(cached_data)
+#             print("QUARTER SECOND")
+#             time.sleep(0.25)
+#     except KeyboardInterrupt:
+#         data_poller_completed_orders.stop_polling()
+#         data_poller_pending_orders.stop_polling()
+#         data_poller_stoploss_orders.stop_polling()
+#         data_poller_balance.stop_polling()
+#         data_poller_all_tickers.stop_polling()
+#         data_poller_all_orders.stop_polling()
+#         data_poller_get_portfolio.stop_polling()
+#         data_poller_get_current_price.stop_polling()
