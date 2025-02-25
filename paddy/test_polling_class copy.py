@@ -89,6 +89,6 @@ if __name__ == "__main__":
             cached_data = data_poller.get_cached_data(func_name)
             print(f"Randomly accessed cache for {func_name}")
             # strategy_function(data_poller)
-            time.sleep(3)
+            time.sleep(10)
     except KeyboardInterrupt:
         data_poller.stop_polling()

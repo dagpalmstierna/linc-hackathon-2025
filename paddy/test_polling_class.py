@@ -1,120 +1,104 @@
-import hackathon_linc as lh
-import pandas as pd
 import time
-import asyncio
-import aiohttp
-from concurrent.futures import ThreadPoolExecutor
-import threading
-
+import multiprocessing
+from typing import Dict, Any
+import hackathon_linc as lh
+import random
 
 lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
-
 class DataPoller:
-    def __init__(self, polling_intervals):
+    def __init__(self, polling_intervals: Dict[str, float]):
         self.polling_intervals = polling_intervals
-        self.cache = {}
-        self.running = False
-        self.paused = threading.Event()
-        self.paused.set()  # Start in the unpaused state
-        self.executor = None
+        self.processes: Dict[str, multiprocessing.Process] = {}
+        self.running = multiprocessing.Value('b', True)  # Shared flag to control processes
 
-    def poll_data(self, func, func_name, interval):
-        while self.running:
-            self.paused.wait()  # Block if paused
-            start_time = time.time()
-            result = func()
-            self.cache[func_name] = result
-            elapsed_time = time.time() - start_time
-            print('~~~~~CALLED: ' + func_name)
-            # print(f"{func_name}: {result} (Time taken: {elapsed_time:.2f} seconds)")
-            self.paused.wait(interval)
+        # Initialize independent cache and lock for each function
+        self.cache = {}  # Dedicated cache for each function
+        self.locks = {}  # Dedicated lock for each function
+        for func_name in polling_intervals.keys():
+            # Use multiprocessing.Value for shared cache
+            self.cache[func_name] = multiprocessing.Value('d', 0.0)  # Shared cache (double)
+            # Use multiprocessing.Lock for shared lock
+            self.locks[func_name] = multiprocessing.Lock()  # Shared lock
+
+    def _poll_data(self, func_name: str, interval: float):
+        func = getattr(lh, func_name)
+        cache_var = self.cache[func_name]
+        lock = self.locks[func_name]
+
+        while self.running.value:
+            start_time = time.monotonic()
+            
+            try:
+                result = func()  # Blocking API call
+                result = random.random()  # Simulate API call
+                with lock:  # Lock only when updating the cache
+                    cache_var.value = result  # Update shared cache
+                print(f'Polled {func_name}')
+            except Exception as e:
+                print(f'Error polling {func_name}')
+            
+            elapsed = time.monotonic() - start_time
+            sleep_time = max(interval - elapsed, 0)
+            time.sleep(max(0.05, sleep_time))
 
     def start_polling(self):
-        if not self.running:
-            self.running = True
-            self.executor = ThreadPoolExecutor(max_workers=len(self.polling_intervals))
+        if self.running.value:
             for func_name, interval in self.polling_intervals.items():
-                func = getattr(lh, func_name)
-                self.executor.submit(self.poll_data, func, func_name, interval)
+                process = multiprocessing.Process(
+                    target=self._poll_data,
+                    args=(func_name, interval))
+                self.processes[func_name] = process
+                process.start()
 
     def stop_polling(self):
-        self.running = False
-        if self.executor:
-            self.executor.shutdown(wait=False)
-            self.executor = None
+        if self.running.value:
+            self.running.value = False  # Signal processes to stop
+            for process in self.processes.values():
+                process.join()  # Wait for processes to finish
 
-    def pause_polling(self):
-        self.paused.clear()  # Block the polling threads
+    def get_cached_data(self, func_name: str) -> Any:
+        cache_var = self.cache[func_name]
+        lock = self.locks[func_name]
+        with lock:  # Lock only when reading the cache
+            return cache_var.value
 
-    def resume_polling(self):
-        self.paused.set()  # Unblock the polling threads
-
-    def get_cached_data(self, func_name):
-        return self.cache.get(func_name)
-
-def strategy_function(data_poller):
-    
+def strategy_function(data_poller: DataPoller):
     # Access cached data
-    all_orders = data_poller.get_cached_data("get_all_orders")
-    completed_orders = data_poller.get_cached_data("get_completed_orders")
-    pending_orders = data_poller.get_cached_data("get_pending_orders")
-    stoploss_orders = data_poller.get_cached_data("get_stoploss_orders")
-    balance = data_poller.get_cached_data("get_balance")
-    portfolio = data_poller.get_cached_data("get_portfolio")
-    all_tickers = data_poller.get_cached_data("get_all_tickers")
-    current_price = data_poller.get_cached_data("get_current_price")
+    data = {func: data_poller.get_cached_data(func) for func in data_poller.polling_intervals}
+    print("Strategy data:")
 
-    # Implement your strategy logic here
-    print(f"Strategy accessing data: {all_orders}, {completed_orders}, {pending_orders}, {stoploss_orders}, {balance}, {portfolio}, {all_tickers}, {current_price}")
-
-    time.sleep(1)
-
-# Example usage
 if __name__ == "__main__":
-    polling_intervals = {
-        "get_all_orders": 5,
+    polling_intervals_slow = {
         "get_completed_orders": 10,
         "get_pending_orders": 15,
         "get_stoploss_orders": 5,
         "get_balance": 10,
-        "get_portfolio": 15,
         "get_all_tickers": 2,
-        "get_current_price": 0.001,
     }
 
-    data_poller = DataPoller(polling_intervals)
+    polling_intervals_fast = {
+        "get_all_orders": 0.01,
+        "get_portfolio": 0.01,
+        "get_current_price": 0.01,
+    }
+
+    data_poller_slow = DataPoller(polling_intervals_slow)
+    data_poller_slow.start_polling()
+
+    data_poller_fast = DataPoller(polling_intervals_fast)
+    data_poller_fast.start_polling()
 
     try:
-        data_poller.start_polling()
-        time.sleep(1)
-        print(1)
-        print("FROM main" + str(data_poller.get_cached_data("get_current_price")))
-        time.sleep(2)
-        data_poller.pause_polling()
-        time.sleep(2)
-        strategy_function(data_poller)
-        time.sleep(5)
-        strategy_function(data_poller)
-        print("RESUMING")
-        data_poller.resume_polling()
-        print("sleeping main thread")
-        time.sleep(10)
-        # print(2)
-        # print("FROM main" + str(data_poller.get_cached_data("get_current_price")))
-        # time.sleep(3)
-        # print(3)
-        # print("FROM main" + str(data_poller.get_cached_data("get_current_price")))
-        # time.sleep(4)
-        # print(4)
-        # print("FROM main" + str(data_poller.get_cached_data("get_current_price")))
-        # time.sleep(5)
-        # print(5)
-        # print("FROM main" + str(data_poller.get_cached_data("get_current_price")))
-        # time.sleep(6)
-        # print(6)
-        # print("FROM main" + str(data_poller.get_cached_data("get_current_price")))
+        while True:
+            func_name = random.choice(list(polling_intervals_slow.keys()))
+            cached_data = data_poller_slow.get_cached_data(func_name)
+            print(f"SLOW: Randomly accessed cache for {func_name}")
+
+            func_name = random.choice(list(polling_intervals_fast.keys()))
+            cached_data = data_poller_fast.get_cached_data(func_name)
+            print(f"FAST: Randomly accessed cache for {func_name}")
+            time.sleep(1)
     except KeyboardInterrupt:
-        data_poller.stop_polling()
-
-
+        data_poller_slow.stop_polling()
+        data_poller_fast.stop_polling()
