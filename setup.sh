@@ -1,14 +1,7 @@
 #!/bin/bash
 
-# Check if Python 3.10.16 is installed
-PYTHON_VERSION=$(python3 --version 2>&1)
-
-if [[ $PYTHON_VERSION != "Python 3.10.16" ]]; then
-    echo "Warning: Python 3.10.16 is not installed. Ensure you are using the correct version."
-fi
-
-# Create virtual environment
-python3 -m venv venv
+# Try to create the virtual environment with Python 3.10.16
+python3.10 -m venv venv || { echo "Error: Python 3.10.16 is not installed. Install it and try again."; exit 1; }
 
 # Activate virtual environment
 source venv/bin/activate

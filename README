@@ -1,0 +1,3 @@
+Mac/Linux: Create virtual python env in python 3.10 and install python packages automatically by running "./setup.sh". You need to have Python 3.10 installed on your computer first! 
+
+Windows: do above manually :) 
