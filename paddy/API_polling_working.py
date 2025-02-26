@@ -41,8 +41,9 @@ class DataPoller:
             
             elapsed = time.monotonic() - start_time
             sleep_time = max(interval - elapsed, 0)
-            with self.lock:
-                time.sleep(max(0.01, sleep_time))
+            time.sleep(max(0.01, sleep_time))
+            # with self.lock:
+            #     time.sleep(max(0.01, sleep_time))
 
     def start_polling(self):
         if self.running.value:
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     data_poller_get_portfolio.start_polling()
     time.sleep(1.2)
 
-    polling_intervals_get_current_price = ("get_current_price", 0.5, multiprocessing.Manager().dict())
+    polling_intervals_get_current_price = ("get_current_price", 0.4, multiprocessing.Manager().dict())
     data_poller_get_current_price = DataPoller(polling_intervals_get_current_price)
     data_poller_get_current_price.start_polling()
     time.sleep(1)
