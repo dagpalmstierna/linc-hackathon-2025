@@ -5,6 +5,7 @@ import hackathon_linc as lh
 import random
 import requests
 import pandas as pd
+import platform
 
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
@@ -213,6 +214,9 @@ class DataCollection:
             # return dict(self.cache)
 
 if __name__ == "__main__":
+    if platform.system() == "Darwin":
+        multiprocessing.set_start_method("fork")
+
     def test(historical_data):
         return {'buy':[('STOCK1', 10)], 'sell':[('STOCK2', 5)]}
     
