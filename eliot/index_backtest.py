@@ -8,6 +8,8 @@ price data given from LINC.
 
 The index strategy buys an equal amount (in dollars) of each stock in the CSV file and 
 tracks the portfolio's value over time.
+
+Find the CSV file with the index backtest results in index_portfolio.csv
 '''
 
 def load_csv_to_df(csv_path):
