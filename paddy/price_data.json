@@ -1,0 +1,74 @@
+{'value': {'data': [
+            {'askMedian': 208.81, 'askVolume': 23375.666396666667, 'bidMedian': 208.64, 'bidVolume': 1566558.337706667, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.1660166666666666, 'symbol': 'STOCK1'
+            },
+            {'askMedian': 119.06, 'askVolume': 1636806.671825, 'bidMedian': 118.97, 'bidVolume': 3718941.662703333, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.090325, 'symbol': 'STOCK10'
+            },
+            {'askMedian': 43.89, 'askVolume': 1968025.0008883327, 'bidMedian': 43.86, 'bidVolume': 2259980.0030383333, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.0228333333333333, 'symbol': 'STOCK2'
+            },
+            {'askMedian': 49.13, 'askVolume': 1537571.66863, 'bidMedian': 49.09, 'bidVolume': 296294.8504816667, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.0319416666666666, 'symbol': 'STOCK3'
+            },
+            {'askMedian': 23.36, 'askVolume': 10428.016738333334, 'bidMedian': 23.31, 'bidVolume': 352624.9982116667, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.0444, 'symbol': 'STOCK4'
+            },
+            {'askMedian': 5.66, 'askVolume': 858.233335, 'bidMedian': 5.65, 'bidVolume': 1076875.0021866667, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.0084083333333333, 'symbol': 'STOCK5'
+            },
+            {'askMedian': 77.09, 'askVolume': 892233.3329866666, 'bidMedian': 77.03, 'bidVolume': 3016501.6512116664, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.0635, 'symbol': 'STOCK6'
+            },
+            {'askMedian': 15.75, 'askVolume': 3073416.690036667, 'bidMedian': 15.74, 'bidVolume': 1761083.3262466667, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.0157666666666666, 'symbol': 'STOCK7'
+            },
+            {'askMedian': 108.22, 'askVolume': 29419.71675333333, 'bidMedian': 108.16, 'bidVolume': 3608749.98967, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.06095, 'symbol': 'STOCK8'
+            },
+            {'askMedian': 78.45, 'askVolume': 3163664.994635, 'bidMedian': 78.42, 'bidVolume': 3.1977465401916647, 'gmtTime': '2020-04-22 08: 00: 00', 'spreadMedian': 0.0337833333333333, 'symbol': 'STOCK9'
+            }
+        ]
+    }
+}
+
+
+{'value': {'data': [
+            {'askMedian': 77.67, 'askVolume': 804.133335, 'bidMedian': 77.64, 'bidVolume': 763.5666616666666, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0241166666666666, 'symbol': 'STOCK1'
+            },
+            {'askMedian': 102.47, 'askVolume': 88010.18327833334, 'bidMedian': 102.39, 'bidVolume': 86796.23345833334, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0862583333333333, 'symbol': 'STOCK10'
+            },
+            {'askMedian': 71.35, 'askVolume': 182063.9659933333, 'bidMedian': 71.33, 'bidVolume': 170860.11667833335, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0207416666666666, 'symbol': 'STOCK2'
+            },
+            {'askMedian': 87.14, 'askVolume': 87104.35004833333, 'bidMedian': 87.11, 'bidVolume': 60898.84995333334, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0366833333333333, 'symbol': 'STOCK3'
+            },
+            {'askMedian': 102.73, 'askVolume': 5112.850025000001, 'bidMedian': 102.63, 'bidVolume': 5460.083345, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0925833333333333, 'symbol': 'STOCK4'
+            },
+            {'askMedian': 25.5, 'askVolume': 901602.4316316668, 'bidMedian': 25.49, 'bidVolume': 746081.3482616667, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.009825, 'symbol': 'STOCK5'
+            },
+            {'askMedian': 94.19, 'askVolume': 40758.21667833334, 'bidMedian': 94.15, 'bidVolume': 34438.36679, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0422666666666666, 'symbol': 'STOCK6'
+            },
+            {'askMedian': 11.13, 'askVolume': 588361.7791066667, 'bidMedian': 11.12, 'bidVolume': 469645.43287666666, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.007475, 'symbol': 'STOCK7'
+            },
+            {'askMedian': 64.97, 'askVolume': 251293.1333283333, 'bidMedian': 64.96, 'bidVolume': 210640.5167483333, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0172, 'symbol': 'STOCK8'
+            },
+            {'askMedian': 84.49, 'askVolume': 172577.333205, 'bidMedian': 84.47, 'bidVolume': 164851.70051833332, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0220083333333333, 'symbol': 'STOCK9'
+            }
+        ]
+    }
+}
+{'value': {'data': [
+            {'askMedian': 77.67, 'askVolume': 804.133335, 'bidMedian': 77.64, 'bidVolume': 763.5666616666666, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0241166666666666, 'symbol': 'STOCK1'
+            },
+            {'askMedian': 102.47, 'askVolume': 88010.18327833334, 'bidMedian': 102.39, 'bidVolume': 86796.23345833334, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0862583333333333, 'symbol': 'STOCK10'
+            },
+            {'askMedian': 71.35, 'askVolume': 182063.9659933333, 'bidMedian': 71.33, 'bidVolume': 170860.11667833335, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0207416666666666, 'symbol': 'STOCK2'
+            },
+            {'askMedian': 87.14, 'askVolume': 87104.35004833333, 'bidMedian': 87.11, 'bidVolume': 60898.84995333334, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0366833333333333, 'symbol': 'STOCK3'
+            },
+            {'askMedian': 102.73, 'askVolume': 5112.850025000001, 'bidMedian': 102.63, 'bidVolume': 5460.083345, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0925833333333333, 'symbol': 'STOCK4'
+            },
+            {'askMedian': 25.5, 'askVolume': 901602.4316316668, 'bidMedian': 25.49, 'bidVolume': 746081.3482616667, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.009825, 'symbol': 'STOCK5'
+            },
+            {'askMedian': 94.19, 'askVolume': 40758.21667833334, 'bidMedian': 94.15, 'bidVolume': 34438.36679, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0422666666666666, 'symbol': 'STOCK6'
+            },
+            {'askMedian': 11.13, 'askVolume': 588361.7791066667, 'bidMedian': 11.12, 'bidVolume': 469645.43287666666, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.007475, 'symbol': 'STOCK7'
+            },
+            {'askMedian': 64.97, 'askVolume': 251293.1333283333, 'bidMedian': 64.96, 'bidVolume': 210640.5167483333, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0172, 'symbol': 'STOCK8'
+            },
+            {'askMedian': 84.49, 'askVolume': 172577.333205, 'bidMedian': 84.47, 'bidVolume': 164851.70051833332, 'gmtTime': '2015-10-15 14: 00: 00', 'spreadMedian': 0.0220083333333333, 'symbol': 'STOCK9'
+            }
+        ]
+    }
+}
