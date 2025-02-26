@@ -121,9 +121,7 @@ def test_sell_all():
     # Restore original function
     lh.sell = original_sell
 
-# --------------------------
-# Main Execution
-# --------------------------
+# Simple test
 if __name__ == "__main__":
     test_create_index_strategy_func()
     print("-" * 40)
