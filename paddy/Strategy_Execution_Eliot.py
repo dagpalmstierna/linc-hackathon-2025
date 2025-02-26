@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import the new API wrapper classes from paddy.
-from eliot.index_strat import create_index_strategy_func, sell_all
+from eliot.index_strat import index_strategy_func
 
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     strat.start()
 
     
-    index_strat = Strategy(1, create_index_strategy_func, data_collect)
+    index_strat = Strategy(1, index_strategy_func, data_collect)
 
     # time.sleep(0.75)
 
