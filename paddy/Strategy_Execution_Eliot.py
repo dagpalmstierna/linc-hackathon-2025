@@ -4,6 +4,14 @@ from typing import Dict, Any
 import hackathon_linc as lh
 import random
 import requests
+import os
+import sys
+
+# Add the parent directory (where both 'eliot' and 'paddy' are located) to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Import the new API wrapper classes from paddy.
+from eliot.index_strat import create_index_strategy_func, sell_all
 
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
@@ -149,29 +157,27 @@ class DataCollection:
             return dict(self.cache)
 
 if __name__ == "__main__":
-    def test(historical_data):
-        return {'buy':('STOCK1', 10), 'sell':('STOCK2', 5)}
-    
+    # Create a Manager to hold shared portfolio data between processes.
+    manager = multiprocessing.Manager()
+    shared_portfolio = manager.dict()
+
+    # Instantiate DataCollection with a polling interval of 0.5 seconds.
     data_collect = DataCollection(0.5)
     data_collect.start()
-    time.sleep(1)
+    time.sleep(1)  # Allow initial data collection
 
-    strat = Strategy(0.5, test, data_collect)
+    # Create the index strategy function using your shared portfolio and starting capital.
+    index_strategy_func = create_index_strategy_func(shared_portfolio, starting_capital=1000000)
+
+    # Instantiate the Strategy with the index strategy function and the data collection source.
+    strat = Strategy(0.5, index_strategy_func, data_collect)
     strat.start()
-
-    time.sleep(0.75)
-
-    strat2 = Strategy(0.5, test, data_collect)
-    strat2.start()
-
-    # time.sleep(1)
 
     try:
         while True:
-            # print(cached_data)
-            # cached_data = data_collect.get_cached_data()
-            # print(cached_data)
             print("~~~~~~ONE SECOND~~~~~~")
             time.sleep(1)
     except KeyboardInterrupt:
-        data_collect.stop_polling()
+        print("Stopping strategy and data collection...")
+        strat.stop()
+        data_collect.stop()
