@@ -3,6 +3,8 @@ import pandas as pd
 df = pd.read_csv("stockPrices_hourly.csv")
 
 df["gmtTime"] = pd.to_datetime(df["gmtTime"])
+df['hour'] = df['gmtTime'].dt.hour
+df['day_of_week'] = df['gmtTime'].dt.dayofweek
 
 stock_dfs = {}
 
