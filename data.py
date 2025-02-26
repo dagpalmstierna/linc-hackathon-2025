@@ -2,16 +2,21 @@ import pandas as pd
 
 df = pd.read_csv("stockPrices_hourly.csv")
 
-df_stock1 = df[df["symbol"] == "STOCK1"]
-df_stock2 = df[df["symbol"] == "STOCK2"]
-df_stock3 = df[df["symbol"] == "STOCK3"]
-df_stock4 = df[df["symbol"] == "STOCK4"]
-df_stock5 = df[df["symbol"] == "STOCK5"]
-df_stock6 = df[df["symbol"] == "STOCK6"]
-df_stock7 = df[df["symbol"] == "STOCK7"]
-df_stock8 = df[df["symbol"] == "STOCK8"]
-df_stock9 = df[df["symbol"] == "STOCK9"]
-df_stock10 = df[df["symbol"] == "STOCK10"]
+df["gmtTime"] = pd.to_datetime(df["gmtTime"])
+
+stock_dfs = {}
+
+for symbol in df["symbol"].unique():
+    df_stock = df[df["symbol"] == symbol].copy()  
+    
+    cols_to_round = [col for col in df_stock.columns if col not in ["gmtTime"]]
+    
+    df_stock[cols_to_round] = df_stock[cols_to_round].round(2)
+
+    stock_dfs[symbol] = df_stock
+
+print(stock_dfs['STOCK1'].head())
+
 
 
 '''df['gmtTime'] = pd.to_datetime(df['gmtTime'])
