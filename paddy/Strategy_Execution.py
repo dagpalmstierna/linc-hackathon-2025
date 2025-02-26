@@ -222,6 +222,7 @@ if __name__ == "__main__":
 
     strat = Strategy(0.5, test, data_collect)
     strat.start()
+    
 
     # time.sleep(0.75)
 
