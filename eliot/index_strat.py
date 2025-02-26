@@ -13,6 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # Import the new API wrapper classes from paddy.
 from paddy.Strategy_Execution import Strategy, DataCollection
 
+
 def create_index_strategy_func(shared_portfolio, starting_capital=1000000):
     """
     Returns a strategy function that:

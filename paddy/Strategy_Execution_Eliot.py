@@ -15,9 +15,6 @@ from eliot.index_strat import create_index_strategy_func, sell_all
 
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
-'''
-Dummy strategy function for testing purposes
-'''
 class Strategy:
     def __init__(self, func_poll_interval: tuple, strategy, data_source):
         self.polling_interval = func_poll_interval
@@ -49,6 +46,7 @@ class Strategy:
             start_time = time.monotonic()
             try:
                 historical_data = self.data_source.get_cached_data()
+                print(historical_data)
                 strat_response = self.strategy_func(historical_data)
 
                 print(strat_response, flush=True)
@@ -112,6 +110,64 @@ class DataCollection:
         response = requests.get('https://hackathonlincapp.azurewebsites.net/api' + '/data', params=params, json=body)
 
         return response.json()
+    
+    def process_data(self, historical_data):
+        
+        # time.sleep(100)
+        df = pd.DataFrame(historical_data)
+        # print(df)
+        df["gmtTime"] = pd.to_datetime(df["gmtTime"])
+
+        # Dictionary to store processed data for each stock
+        stock_dfs = {}
+
+        # Feature engineering for each stock
+        for symbol in df["symbol"].unique():
+            df_stock = df[df["symbol"] == symbol].copy()
+
+            # Round numerical columns
+            cols_to_round = [col for col in df_stock.columns if col not in ["gmtTime", "symbol"]]
+            df_stock[cols_to_round] = df_stock[cols_to_round].round(2)
+
+            # Time-based features
+            df_stock['hour'] = df_stock['gmtTime'].dt.hour
+            df_stock['day_of_week'] = df_stock['gmtTime'].dt.dayofweek
+
+            # Rolling statistics
+            df_stock['askMedian_rolling_mean_3h'] = df_stock['askMedian'].rolling(window=3, min_periods=1).mean()
+            df_stock['bidMedian_rolling_mean_3h'] = df_stock['bidMedian'].rolling(window=3, min_periods=1).mean()
+            df_stock['askMedian_rolling_std_3h'] = df_stock['askMedian'].rolling(window=3, min_periods=1).std()
+            df_stock['bidMedian_rolling_std_3h'] = df_stock['bidMedian'].rolling(window=3, min_periods=1).std()
+
+            # Percentage changes
+            df_stock['askMedian_pct_change'] = df_stock['askMedian'].pct_change()
+            df_stock['bidMedian_pct_change'] = df_stock['bidMedian'].pct_change()
+
+            # Spread-related features
+            df_stock['spread_ratio'] = df_stock['spreadMedian'] / (df_stock['askMedian'] + df_stock['bidMedian'])
+            # df_stock['spread_pct_change'] = df_stock['spreadMedian'].pct_change()
+
+            # Volume-related features
+            df_stock['askVolume_relative'] = df_stock['askVolume'] / df_stock['askVolume'].rolling(window=5, min_periods=1).mean()
+            df_stock['bidVolume_relative'] = df_stock['bidVolume'] / df_stock['bidVolume'].rolling(window=5, min_periods=1).mean()
+            df_stock['volume_imbalance'] = (df_stock['askVolume'] - df_stock['bidVolume']) / (df_stock['askVolume'] + df_stock['bidVolume'])
+
+            # Lagged features (e.g., previous hour's values)
+            for lag in range(1, 25):  # Add lags for the last 3 hours
+                df_stock[f'askMedian_lag_{lag}'] = df_stock['askMedian'].shift(lag)
+                df_stock[f'bidMedian_lag_{lag}'] = df_stock['bidMedian'].shift(lag)
+                df_stock[f'spreadMedian_lag_{lag}'] = df_stock['spreadMedian'].shift(lag)
+
+            # Target variable: Direction of price movement (1 if bidMedian increases next hour, 0 otherwise)
+            df_stock['target'] = (df_stock['bidMedian'].shift(-5) > df_stock['bidMedian']).astype(int)
+
+            # Drop rows with missing values (due to lags and rolling features)
+            df_stock = df_stock.dropna()
+
+            # Store processed dataframe
+            stock_dfs[symbol] = df_stock
+            # print('FROM processing',df_stock)
+        return stock_dfs
 
     def run_data_collect(self):
         # func = getattr(lh, func_name)
@@ -121,9 +177,10 @@ class DataCollection:
             start_time = time.monotonic()
             try:
                 historical_data = self.get_historical_data(100)
+                historical_processed = self.process_data(historical_data)
                 with self.lock:  # Lock only when updating the cache
                     self.cache.clear()  # Clear the dictionary
-                    self.cache.update({"value": historical_data})
+                    self.cache.update(historical_processed)
                  
                 # print(result_historical)
                 print(f'Polled', flush=True)
@@ -157,27 +214,33 @@ class DataCollection:
             return dict(self.cache)
 
 if __name__ == "__main__":
-    # Create a Manager to hold shared portfolio data between processes.
-    manager = multiprocessing.Manager()
-    shared_portfolio = manager.dict()
-
-    # Instantiate DataCollection with a polling interval of 0.5 seconds.
+    def test(historical_data):
+        return {'buy':('STOCK1', 10), 'sell':('STOCK2', 5)}
+    
     data_collect = DataCollection(0.5)
     data_collect.start()
-    time.sleep(1)  # Allow initial data collection
+    time.sleep(1)
 
-    # Create the index strategy function using your shared portfolio and starting capital.
-    index_strategy_func = create_index_strategy_func(shared_portfolio, starting_capital=1000000)
-
-    # Instantiate the Strategy with the index strategy function and the data collection source.
-    strat = Strategy(0.5, index_strategy_func, data_collect)
+    strat = Strategy(0.5, test, data_collect)
     strat.start()
+
+    
+    index_strat = Strategy(1, create_index_strategy_func, data_collect)
+
+    # time.sleep(0.75)
+
+    # strat2 = Strategy(0.5, test, data_collect)
+    # strat2.start()
+
+    # time.sleep(1)
 
     try:
         while True:
+            # print(cached_data)
+            # cached_data = data_collect.get_cached_data()
+            # print(cached_data)
             print("~~~~~~ONE SECOND~~~~~~")
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Stopping strategy and data collection...")
-        strat.stop()
         data_collect.stop()
+        strat.stop()
