@@ -5,6 +5,7 @@ import hackathon_linc as lh
 import random
 import requests
 import pandas as pd
+import platform
 
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
@@ -41,6 +42,7 @@ class Strategy:
                 historical_data = self.data_source.get_cached_data()
                 print(historical_data)
                 strat_response = self.strategy_func(historical_data)
+                
 
                 print(strat_response, flush=True)
                  
@@ -56,6 +58,7 @@ class Strategy:
     
     def buy():
         return None
+    
     def sell():
         return None
 
@@ -87,7 +90,7 @@ class DataCollection:
         self.running = multiprocessing.Value('b', True)  # Shared flag to control processes
         self.process = multiprocessing.Process(target=self.run_data_collect)
         self.lock = multiprocessing.Lock()
-        self.cache = multiprocessing.Manager().dict()
+        self.cache = multiprocessing.Manager().list()
     
     @staticmethod
     def get_historical_data(days_back: int, ticker: str = None) -> dict:
@@ -170,10 +173,13 @@ class DataCollection:
             start_time = time.monotonic()
             try:
                 historical_data = self.get_historical_data(100)
-                historical_processed = self.process_data(historical_data)
+                # print(historical_data)
+                historical_processed = historical_data #self.process_data(historical_data)
                 with self.lock:  # Lock only when updating the cache
-                    self.cache.clear()  # Clear the dictionary
-                    self.cache.update(historical_processed)
+                    # self.cache.clear()  # Clear the dictionary
+                    # self.cache.update(historical_processed)
+                    self.cache[:] = []  # Clear the list
+                    self.cache.append(historical_processed)
                  
                 # print(result_historical)
                 print(f'Polled', flush=True)
@@ -204,11 +210,15 @@ class DataCollection:
 
     def get_cached_data(self):
         with self.lock:  # Lock only when reading the cache
-            return dict(self.cache)
+            return list(self.cache)
+            # return dict(self.cache)
 
 if __name__ == "__main__":
+    if platform.system() == "Darwin":
+        multiprocessing.set_start_method("fork")
+
     def test(historical_data):
-        return {'buy':('STOCK1', 10), 'sell':('STOCK2', 5)}
+        return {'buy':[('STOCK1', 10)], 'sell':[('STOCK2', 5)]}
     
     data_collect = DataCollection(0.5)
     data_collect.start()
@@ -216,6 +226,7 @@ if __name__ == "__main__":
 
     strat = Strategy(0.5, test, data_collect)
     strat.start()
+    
 
     # time.sleep(0.75)
 
