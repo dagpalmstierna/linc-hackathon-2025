@@ -6,11 +6,12 @@ import random
 import requests
 import pandas as pd
 import platform
+import traceback
 
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
 class Strategy:
-    def __init__(self, func_poll_interval: tuple, strategy, data_source, order_manager=None, starting_balance=1000):
+    def __init__(self, func_poll_interval: tuple, strategy, data_source, order_manager=None, starting_balance=100000):
         self.polling_interval = func_poll_interval
         self.running = multiprocessing.Value('b', True)  # Shared flag to control processes
         self.process = multiprocessing.Process(target=self.run_strat)
@@ -18,6 +19,7 @@ class Strategy:
         self.cache = multiprocessing.Manager().dict()
         self.strategy_func = strategy
         self.data_source = data_source
+        time.sleep(1)
         all_tickers = self.get_all_tickers()
         self.portfolio = {ticker: 0 for ticker in all_tickers}
         self.order_manager = order_manager
@@ -52,29 +54,31 @@ class Strategy:
         while self.running.value:
             start_time = time.monotonic()
             try:
+                print('PORTFOLIO', self.portfolio)
                 historical_data = self.data_source.get_cached_data()
-                print(historical_data)
                 strat_response = self.strategy_func(historical_data)
-                order_to_execute = self.order_manager(strat_response, self.balance, self.portfolio)
-                
-                if order_to_execute:
-                    for order in order_to_execute['buy']:
-                        self.buy(order[0], order[1])
-                    for order in order_to_execute['sell']:
-                        self.sell(order[0], order[1])
-                print(strat_response, flush=True)
+                if len(strat_response) > 0:
+                    current_prices = {ticker:{'ask': 50, 'bid': 50} for ticker in self.portfolio.keys()} # need to make calculate this from historical data
+                    order_to_execute = self.order_manager(strat_response, self.balance, self.portfolio, current_prices)
+
+                    if order_to_execute != None:
+                        if order_to_execute[0] == 'buy':
+                            self.buy(order_to_execute[1], order_to_execute[2])
+                        if order_to_execute[0] == 'sell':
+                            self.sell(order_to_execute[1], order_to_execute[2])
                  
                 # print(result_historical)
-                print(f'Polled', flush=True)
+                # print(f'Polled', flush=True)
             except Exception as e:
                 print(f'Error polling: {e}')
+                traceback.print_exc()
             
             elapsed = time.monotonic() - start_time
-            print(f"Elapsed time: {elapsed}")
+            # print(f"Elapsed time: {elapsed}")
             sleep_time = max(interval - elapsed, 0)
             time.sleep(max(0.01, sleep_time))
     
-    def buy(self, ticker, amount, price=None, days_to_cancel=0):
+    def buy(self, ticker, amount, price=None, days_to_cancel=1):
         params = {'type': 'buy',
               'ticker': ticker,
               'amount': amount,
@@ -88,13 +92,17 @@ class Strategy:
 
         response = requests.post(url_s, params=params, json=body)
         response_json = response.json()
+        print(response_json)
         if 'order_status' in response_json and response_json['order_status'] == 'completed':
+            price = response_json['price']
+            amount = response_json['amount']
             self.balance -= amount * price
             self.portfolio[ticker] += amount
+            print(f"Bought {amount} of {ticker} at {price}")
             return response_json['order_status']
         return None
     
-    def sell(self, ticker, amount, price=None, days_to_cancel=0):
+    def sell(self, ticker, amount, price=None, days_to_cancel=1):
         params = {'type': 'sell',
               'ticker': ticker,
               'amount': amount,
@@ -108,10 +116,14 @@ class Strategy:
 
         response = requests.post(url_s, params=params, json=body)
         response_json = response.json()
+        print(response_json)
 
         if 'order_status' in response_json and response_json['order_status'] == 'completed':
+            price = response_json['price']
+            amount = response_json['amount']
             self.balance += amount * price
             self.portfolio[ticker] -= amount
+            print(f"Sold {amount} of {ticker} at {price}")
             return response_json['order_status']
         return None
 
@@ -226,7 +238,7 @@ class DataCollection:
             start_time = time.monotonic()
             try:
                 historical_data = self.get_historical_data(100)
-                # print(historical_data)
+                print(historical_data)
                 historical_processed = historical_data #self.process_data(historical_data)
                 with self.lock:  # Lock only when updating the cache
                     # self.cache.clear()  # Clear the dictionary
@@ -272,16 +284,28 @@ if __name__ == "__main__":
 
     def test(historical_data):
         buy_sell = random.choice(['buy', 'sell'])
-        return {'buy':[('STOCK1', 10)], 'sell':[('STOCK2', 5)]}
+        stock = random.choice(['STOCK1', 'STOCK2', 'STOCK3', 'STOCK4', 'STOCK5', 'STOCK6', 'STOCK7', 'STOCK8', 'STOCK9', 'STOCK10'])
+        return random.choice([[(buy_sell, stock)], [], [], [], []])
     
-    def order_manager_example(strategy_response, balance, portfolio):
-
+    def order_manager_example(strategy_response, balance, portfolio, current_price):
+        for action, ticker in strategy_response:
+            if action == 'sell' and portfolio[ticker] > 0:
+                amount_stock_we_have = portfolio[ticker]
+                return ('sell', ticker, amount_stock_we_have)
+            elif action == 'buy':
+                curr_stock_price = current_price[ticker]['ask']
+                amount = int((balance*0.01) // curr_stock_price)
+                # print('BUY AMOUNT', amount)
+                return ('buy', ticker, amount)
+            elif action == 'sell':
+                print('SELL but had no stock')
+                return None
     
-    data_collect = DataCollection(0.5)
+    data_collect = DataCollection(0.7)
     data_collect.start()
     time.sleep(1)
 
-    strat = Strategy(0.5, test, data_collect)
+    strat = Strategy(1, test, data_collect, order_manager_example)
     strat.start()
     
 
