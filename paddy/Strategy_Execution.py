@@ -1,6 +1,6 @@
 import time
 import multiprocessing
-from typing import Dict, Any
+from typing import Dict, Any, List
 import hackathon_linc as lh
 import random
 import requests
@@ -10,7 +10,7 @@ import platform
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
 class Strategy:
-    def __init__(self, func_poll_interval: tuple, strategy, data_source):
+    def __init__(self, func_poll_interval: tuple, strategy, data_source, order_manager=None, starting_balance=1000):
         self.polling_interval = func_poll_interval
         self.running = multiprocessing.Value('b', True)  # Shared flag to control processes
         self.process = multiprocessing.Process(target=self.run_strat)
@@ -18,6 +18,10 @@ class Strategy:
         self.cache = multiprocessing.Manager().dict()
         self.strategy_func = strategy
         self.data_source = data_source
+        all_tickers = self.get_all_tickers()
+        self.portfolio = {ticker: 0 for ticker in all_tickers}
+        self.order_manager = order_manager
+        self.balance = starting_balance
     
     @staticmethod
     def get_portfolio() -> Dict[str, int]:
@@ -25,6 +29,15 @@ class Strategy:
         body = {"api_key": "265d0b0b-7e97-44a7-9576-47789e8712b2" } # hard code this to avoid shared resources
         response = requests.get(url, json=body)
         return response.json()
+    
+    @staticmethod
+    def get_all_tickers() -> List[str]:
+
+        ticker_url = 'https://hackathonlincapp.azurewebsites.net/api'+'/symbols'
+        response = requests.get(ticker_url)
+        response_json = response.json()
+
+        return response_json
     
     @staticmethod
     def get_current_price(ticker: str = None) -> dict:
@@ -42,8 +55,13 @@ class Strategy:
                 historical_data = self.data_source.get_cached_data()
                 print(historical_data)
                 strat_response = self.strategy_func(historical_data)
+                order_to_execute = self.order_manager(strat_response, self.balance, self.portfolio)
                 
-
+                if order_to_execute:
+                    for order in order_to_execute['buy']:
+                        self.buy(order[0], order[1])
+                    for order in order_to_execute['sell']:
+                        self.sell(order[0], order[1])
                 print(strat_response, flush=True)
                  
                 # print(result_historical)
@@ -56,10 +74,45 @@ class Strategy:
             sleep_time = max(interval - elapsed, 0)
             time.sleep(max(0.01, sleep_time))
     
-    def buy():
+    def buy(self, ticker, amount, price=None, days_to_cancel=0):
+        params = {'type': 'buy',
+              'ticker': ticker,
+              'amount': amount,
+              'days_to_cancel': days_to_cancel}
+        body = {'api_key': "265d0b0b-7e97-44a7-9576-47789e8712b2"}
+
+        if price is not None:
+            params['price'] = price
+
+        url_s = 'https://hackathonlincapp.azurewebsites.net/api' + '/order/'
+
+        response = requests.post(url_s, params=params, json=body)
+        response_json = response.json()
+        if 'order_status' in response_json and response_json['order_status'] == 'completed':
+            self.balance -= amount * price
+            self.portfolio[ticker] += amount
+            return response_json['order_status']
         return None
     
-    def sell():
+    def sell(self, ticker, amount, price=None, days_to_cancel=0):
+        params = {'type': 'sell',
+              'ticker': ticker,
+              'amount': amount,
+              'days_to_cancel': days_to_cancel}
+        body = {'api_key': "265d0b0b-7e97-44a7-9576-47789e8712b2"}
+
+        if price is not None:
+            params['price'] = price
+
+        url_s = 'https://hackathonlincapp.azurewebsites.net/api' + '/order/'
+
+        response = requests.post(url_s, params=params, json=body)
+        response_json = response.json()
+
+        if 'order_status' in response_json and response_json['order_status'] == 'completed':
+            self.balance += amount * price
+            self.portfolio[ticker] -= amount
+            return response_json['order_status']
         return None
 
     def start(self):
@@ -218,7 +271,11 @@ if __name__ == "__main__":
         multiprocessing.set_start_method("fork")
 
     def test(historical_data):
+        buy_sell = random.choice(['buy', 'sell'])
         return {'buy':[('STOCK1', 10)], 'sell':[('STOCK2', 5)]}
+    
+    def order_manager_example(strategy_response, balance, portfolio):
+
     
     data_collect = DataCollection(0.5)
     data_collect.start()
