@@ -3,7 +3,7 @@ import talib as ta
 import hackathon_linc as lh
 import numpy as np
     
-def momentum_strategy(historical_data, capital=100000, ticker="STOCK1"):
+def momentum_strategy(historical_data):
     
     df = pd.DataFrame(historical_data)
     df.index = pd.to_datetime(df["gmtTime"])
@@ -37,4 +37,3 @@ def momentum_strategy(historical_data, capital=100000, ticker="STOCK1"):
     else: 
         return "hold"
     
-print(momentum_strategy()) 
