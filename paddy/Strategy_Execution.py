@@ -6,7 +6,7 @@ import random
 import requests
 import pandas as pd
 import platform
-from momentum_strategy import momentum_strategy
+from momentum_strategy import momentum_strategy, rsi_strategy
 import traceback
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
@@ -57,6 +57,7 @@ class Strategy:
                 print('PORTFOLIO', self.portfolio)
                 historical_data = self.data_source.get_cached_data()
                 strat_response = self.strategy_func(historical_data)
+                print(strat_response)
                 if len(strat_response) > 0:
                     current_prices = {ticker:{'ask': 50, 'bid': 50} for ticker in self.portfolio.keys()} # need to make calculate this from historical data
                     order_to_execute = self.order_manager(strat_response, self.balance, self.portfolio, current_prices)
@@ -238,7 +239,7 @@ class DataCollection:
             start_time = time.monotonic()
             try:
                 historical_data = self.get_historical_data(100)
-                print(historical_data)
+               # print(historical_data)
                 historical_processed = historical_data #self.process_data(historical_data)
                 with self.lock:  # Lock only when updating the cache
                     # self.cache.clear()  # Clear the dictionary
@@ -287,28 +288,31 @@ if __name__ == "__main__":
         stock = random.choice(['STOCK1', 'STOCK2', 'STOCK3', 'STOCK4', 'STOCK5', 'STOCK6', 'STOCK7', 'STOCK8', 'STOCK9', 'STOCK10'])
         return random.choice([[(buy_sell, stock)], [], [], [], []])
     
+
     def order_manager_example(strategy_response, balance, portfolio, current_price):
         for action, ticker in strategy_response:
             if action == 'sell' and portfolio[ticker] > 0:
                 amount_stock_we_have = portfolio[ticker]
                 return ('sell', ticker, amount_stock_we_have)
             elif action == 'buy':
+                print("TRIED BUYING")
                 curr_stock_price = current_price[ticker]['ask']
                 amount = int((balance*0.01) // curr_stock_price)
                 # print('BUY AMOUNT', amount)
                 return ('buy', ticker, amount)
             elif action == 'sell':
                 print('SELL but had no stock')
-                return None
+        return None
+    
     
     data_collect = DataCollection(0.7)
     data_collect.start()
     time.sleep(1)
 
-    strat = Strategy(1, test, data_collect, order_manager_example)
-    strat.start()
+    # strat = Strategy(1, test, data_collect, order_manager_example)
+    # strat.start()
 
-    strat2 = Strategy(0.5, test, data_collect)
+    strat2 = Strategy(1, rsi_strategy, data_collect, order_manager_example)
     strat2.start()
     
 
@@ -328,5 +332,5 @@ if __name__ == "__main__":
             time.sleep(1)
     except KeyboardInterrupt:
         data_collect.stop()
-        strat.stop()
+       # strat.stop()
         strat2.stop()
