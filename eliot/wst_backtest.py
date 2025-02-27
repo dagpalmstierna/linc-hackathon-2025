@@ -1,10 +1,14 @@
 import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 import pandas as pd
 from kymatio import Scattering1D
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 from index_backtest import load_csv_to_df
+
 
 def compute_scattering_features(signal, scattering):
     # Convert the 1D numpy array to a torch tensor and add a batch dimension.
@@ -72,10 +76,6 @@ def train_wst_model(pivot_df, window_size=24, train_ratio=0.7, J=3, Q=1):
       - Generates a trading signal (1 if predicted return > 0, else 0).
       - Simulates portfolio performance.
     """
-    from sklearn.linear_model import LinearRegression
-    import pandas as pd
-    import numpy as np
-    from kymatio import Scattering1D
 
     # 1) Initialize scattering transform
     scattering = Scattering1D(J=J, shape=window_size, Q=Q)
@@ -170,15 +170,55 @@ def predict(model, X_test, y_test, times_test, tickers_test, capital=1000000):
     }).set_index('time')    
     return model, portfolio_df, test_results
 
-def plot_wst(portfolio_df):
+def plot_wst_with_stats(portfolio_df, test_results):
+    """
+    Plots the ML strategy portfolio value over time and annotates the plot with performance statistics.
+
+    Parameters:
+        portfolio_df (pd.DataFrame): DataFrame containing the ML strategy portfolio history.
+                                     It must include 'portfolio_value' and 'strategy_return' columns,
+                                     and have a datetime index.
+        test_results (pd.DataFrame): DataFrame containing test predictions and actual returns.
+                                     It must include 'signal', 'actual_return', and 'time' columns.
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # Compute directional accuracy: percentage of times the signal correctly predicted the movement.
+    # We define the actual movement as 1 if actual_return > 0, else 0.
+    test_results = test_results.copy()
+    test_results['actual_movement'] = (test_results['actual_return'] > 0).astype(int)
+    accuracy = np.mean(test_results['signal'] == test_results['actual_movement'])
+    
+    # Compute strategy statistics from the portfolio returns.
+    # Assuming portfolio_df has a column 'strategy_return' with the return for each period.
+    avg_return = portfolio_df['strategy_return'].mean()
+    std_return = portfolio_df['strategy_return'].std()
+    # Annualize Sharpe ratio (scaling factor sqrt(252) for hourly data may need adjustment).
+    sharpe_ratio = (avg_return / std_return * np.sqrt(252)) if std_return != 0 else np.nan
+    
+    # Plot the portfolio value over time.
     plt.figure(figsize=(10, 6))
-    plt.plot(portfolio_df.index, portfolio_df['portfolio_value'], label='ML Strategy Portfolio')
+    plt.plot(portfolio_df.index, portfolio_df['portfolio_value'], label='ML Strategy Portfolio', color='orange')
     plt.title('ML Trading Strategy Portfolio Value Over Time')
     plt.xlabel('Time')
     plt.ylabel('Portfolio Value ($)')
     plt.legend()
+    
+    # Create a text box with the statistics.
+    stats_text = (
+        f"Directional Accuracy: {accuracy:.2%}\n"
+        f"Avg Return per period: {avg_return:.4f}\n"
+        f"Std Dev of Return: {std_return:.4f}\n"
+        f"Approx. Sharpe Ratio: {sharpe_ratio:.4f}"
+    )
+    
+    # Annotate the plot with the performance statistics.
+    plt.gcf().text(0.15, 0.75, stats_text, fontsize=10,
+                   bbox=dict(facecolor='white', alpha=0.5))
     plt.tight_layout()
     plt.show()
+
 
 def plot_wst_and_index(df_index, portfolio_df):
     """
@@ -236,7 +276,7 @@ if __name__ == "__main__":
     # Plot results and compare against index
     plot_wst_and_index(df_index, portfolio_df)
 
-    plot_wst(portfolio_df)
+    plot_wst_with_stats(portfolio_df, test_results)
 
     # Save the backtesting results to CSV files.
     portfolio_df.to_csv('eliot/ml_strategy_portfolio.csv')
