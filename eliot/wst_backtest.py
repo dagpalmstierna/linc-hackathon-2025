@@ -41,7 +41,7 @@ def compute_scattering_features(signal, scattering):
     return features.squeeze(0)
 
 
-def preprocess_and_feature_extract(pivot_df, window_size, scattering):
+def preprocess_and_feature_extract(pivot_df, window_size, scattering, prediction_horizon = 1):
     """
     For each ticker in pivot_df, slide a window of length window_size over its price series,
     compute scattering features for the window, and set the target as the next hour’s return.
@@ -53,12 +53,12 @@ def preprocess_and_feature_extract(pivot_df, window_size, scattering):
         ticker_list - corresponding tickers.
     """
     X_list, y_list, time_list, ticker_list = [], [], [], []
-    
+
     for ticker in pivot_df.columns:
         prices = pivot_df[ticker].values
         
         # Loop over time indices with enough history and a following return.
-        for t in range(window_size, len(prices) - 1):
+        for t in range(window_size, len(prices) - prediction_horizon):
             window = prices[t - window_size:t]
             std_val = np.std(window)
             if std_val == 0:
@@ -73,7 +73,7 @@ def preprocess_and_feature_extract(pivot_df, window_size, scattering):
                 continue
             
             # Define the target as the return from time t to t+1.
-            target = (prices[t + 1] - prices[t]) / prices[t]
+            target = (prices[t + prediction_horizon] - prices[t]) / prices[t]
             
             X_list.append(features)
             y_list.append(target)
@@ -111,7 +111,7 @@ class MlpRegressor(nn.Module):
 
 
 def train_wst_model(pivot_df, window_size=24, train_ratio=0.7, J=3, Q=1,
-                    hidden_dim=64, num_epochs=10, batch_size=32, lr=1e-3):
+                    hidden_dim=64, num_epochs=10, batch_size=32, lr=1e-3, prediction_horizon = 1):
     """
     Trains a wavelet scattering + MLP regression model to predict next-hour returns.
     
@@ -134,7 +134,7 @@ def train_wst_model(pivot_df, window_size=24, train_ratio=0.7, J=3, Q=1,
     scattering = Scattering1D(J=J, shape=window_size, Q=Q)
     
     # Build the dataset across all tickers.
-    X, y, time_list, ticker_list = preprocess_and_feature_extract(pivot_df, window_size, scattering)
+    X, y, time_list, ticker_list = preprocess_and_feature_extract(pivot_df, window_size, scattering, prediction_horizon = prediction_horizon)
     
     # Create a DataFrame to sort samples in global chronological order.
     df_all = pd.DataFrame({
@@ -317,11 +317,12 @@ if __name__ == "__main__":
     hidden_dim=4 # removed
     num_epochs=10
     batch_size=32
-    lr=0.002
+    lr=0.0025
+    prediction_horizon = 9
     print("Training the model with the following hyperparameters:")
     print(f"Window Size: {window_size}, J: {J}, Q: {Q}, Hidden Dim: {hidden_dim}, Num Epochs: {num_epochs}, Batch Size: {batch_size}, LR: {lr}")
     model, X_test, y_test, times_test, tickers_test = train_wst_model(pivot_df, window_size=window_size, train_ratio=0.7, J=J, Q=Q,
-                    hidden_dim=hidden_dim, num_epochs=num_epochs, batch_size=batch_size, lr=lr)
+                    hidden_dim=hidden_dim, num_epochs=num_epochs, batch_size=batch_size, lr=lr, prediction_horizon = prediction_horizon)
 
     # Predict and obtain results.
     model, portfolio_df, test_results = predict(model, X_test, y_test, times_test, tickers_test, capital=1000000)
