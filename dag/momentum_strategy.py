@@ -20,6 +20,8 @@ def momentum_strategy(historical_data, capital=100000, ticker="STOCK1"):
     df["macd_signal"] = macd_signal
     df["macd_hist"]   = macd_hist  
    
+    df["rsi"] = ta.RSI(df["price"], timeperiod=14)
+
     current_date = df.iloc[-1]
     
     rsi_value = current_date["rsi"]
