@@ -7,6 +7,7 @@ import requests
 import pandas as pd
 import platform
 from momentum_strategy import momentum_strategy
+import traceback
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
 class Strategy:
