@@ -6,7 +6,7 @@ import random
 import requests
 import pandas as pd
 import platform
-
+from momentum_strategy import momentum_strategy
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
 class Strategy:
@@ -226,6 +226,9 @@ if __name__ == "__main__":
 
     strat = Strategy(0.5, test, data_collect)
     strat.start()
+
+    strat2 = Strategy(0.5, test, data_collect)
+    strat2.start()
     
 
     # time.sleep(0.75)
@@ -245,3 +248,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         data_collect.stop()
         strat.stop()
+        strat2.stop()
