@@ -7,3 +7,4 @@ hackathon-linc
 kymatio
 torch
 scikit-learn
+ta-lib
