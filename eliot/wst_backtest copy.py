@@ -87,16 +87,9 @@ def preprocess_and_feature_extract(pivot_df, window_size, scattering):
 
 class MlpRegressor(nn.Module):
     """
-    A single-layer perceptron for regression.
-    """
-    def __init__(self, input_dim, hidden_dim=64, output_dim=1):
-        super(MlpRegressor, self).__init__()
-        self.net = nn.Linear(input_dim, output_dim)  # Only one linear transformation
-
-    """
     A simple multi-layer perceptron for regression.
     """
-    '''def __init__(self, input_dim, hidden_dim=64, output_dim=1):
+    def __init__(self, input_dim, hidden_dim=64, output_dim=1):
         super(MlpRegressor, self).__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -104,7 +97,7 @@ class MlpRegressor(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, output_dim)
-        )'''
+        )
     
     def forward(self, x):
         return self.net(x)
@@ -275,7 +268,6 @@ def plot_wst_with_stats(portfolio_df, test_results):
         f"Std Dev of Return: {std_return:.4f}\n"
         f"Approx. Sharpe Ratio: {sharpe_ratio:.4f}"
     )
-    print(stats_text) # Added print statement
     
     plt.gcf().text(0.15, 0.75, stats_text, fontsize=10,
                    bbox=dict(facecolor='white', alpha=0.5))
@@ -311,18 +303,10 @@ if __name__ == "__main__":
     pivot_df = pivot_df.sort_index().ffill()  # Updated from fillna(method='ffill') to avoid deprecation warning.
     
     # Train the model.
-    window_size=9  # 1 day is 9 hours, so 5 days is 45 hours
-    J=3 # 2^J < window_size
-    Q=2 # arbitrary number, keep it not too high
-    hidden_dim=4 # removed
-    num_epochs=10
-    batch_size=32
-    lr=0.002
-    print("Training the model with the following hyperparameters:")
-    print(f"Window Size: {window_size}, J: {J}, Q: {Q}, Hidden Dim: {hidden_dim}, Num Epochs: {num_epochs}, Batch Size: {batch_size}, LR: {lr}")
-    model, X_test, y_test, times_test, tickers_test = train_wst_model(pivot_df, window_size=window_size, train_ratio=0.7, J=J, Q=Q,
-                    hidden_dim=hidden_dim, num_epochs=num_epochs, batch_size=batch_size, lr=lr)
-
+    model, X_test, y_test, times_test, tickers_test = train_wst_model(
+        pivot_df, window_size=24, train_ratio=0.7, J=3, Q=1
+    )
+    
     # Predict and obtain results.
     model, portfolio_df, test_results = predict(model, X_test, y_test, times_test, tickers_test, capital=1000000)
     
