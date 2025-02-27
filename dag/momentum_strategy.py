@@ -63,9 +63,8 @@ def momentum_strategy(historical_data):
     df["macd_hist"]   = macd_hist  
    
     stock_dfs = {}
-
-    for symbol, stock_df in stock_dfs.items:
-        df_stock = df[df["symbol"] == symbol].copy()  
+    for symbol in df["symbol"].unique():
+        df_stock = df[df["symbol"] == symbol].copy()
         stock_dfs[symbol] = df_stock
     
     recommendations = {}
