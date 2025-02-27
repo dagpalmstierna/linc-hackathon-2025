@@ -179,7 +179,7 @@ class DataCollection:
                     # self.cache.clear()  # Clear the dictionary
                     # self.cache.update(historical_processed)
                     self.cache[:] = []  # Clear the list
-                    self.cache.append(historical_processed)
+                    self.cache[:] = historical_processed
                  
                 # print(result_historical)
                 print(f'Polled', flush=True)
