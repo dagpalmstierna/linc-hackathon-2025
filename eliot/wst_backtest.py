@@ -60,38 +60,82 @@ def preprocess_and_feature_extract(pivot_df, window_size, scattering):
     y = np.array(y_list)
     return X, y, time_list, ticker_list
 
-def ml_trading_strategy(pivot_df, window_size=24, capital=1000000, train_ratio=0.7, J = 3, Q = 1, plot=True):
+def train_wst_model(pivot_df, window_size=24, train_ratio=0.7, J=3, Q=1):
     """
     J - scale parameter for the scattering transform
     Q - quality factor for the scattering transform
-    train_ratio - proportion of data to use for training
-    
+    train_ratio - proportion of data (by time) to use for training
+
     Implements a long-only ML trading strategy:
       - Uses a sliding window of ask prices to compute wavelet scattering features.
       - Trains a linear regression model to predict the next hour's return.
       - Generates a trading signal (1 if predicted return > 0, else 0).
-      - Simulates portfolio performance by averaging actual returns for all stocks with a positive signal at each timestamp.
+      - Simulates portfolio performance.
     """
-    
-    # Initialize the scattering transform (Kymatio) with chosen parameters.
-    scattering = Scattering1D(J=J, shape=window_size, Q=Q)
-    
-    # Build the ML dataset.
-    X, y, time_list, tickers = preprocess_and_feature_extract(pivot_df, window_size, scattering)
-    
-    # Split the dataset chronologically into training and test sets.
-    n_samples = len(X)
-    split_idx = int(n_samples * train_ratio)
-    X_train, X_test = X[:split_idx], X[split_idx:]
-    y_train, y_test = y[:split_idx], y[split_idx:]
-    times_train, times_test = np.array(time_list[:split_idx]), np.array(time_list[split_idx:])
-    tickers_train, tickers_test = tickers[:split_idx], tickers[split_idx:]
-    
-    # print(n_samples , " = ", len(X_train), " + ", len(X_test)) # OK!
+    from sklearn.linear_model import LinearRegression
+    import pandas as pd
+    import numpy as np
+    from kymatio import Scattering1D
 
-    # Train a simple linear regression model.
+    # 1) Initialize scattering transform
+    scattering = Scattering1D(J=J, shape=window_size, Q=Q)
+
+    # 2) Build the ML dataset for *all* tickers
+    X, y, time_list, ticker_list = preprocess_and_feature_extract(
+        pivot_df, window_size, scattering
+    )
+
+    # -----------------------------
+    # 3) Create a DataFrame so we can sort by actual time across all tickers
+    # -----------------------------
+    df_all = pd.DataFrame({
+        'time': time_list,
+        'ticker': ticker_list,
+        'y': y
+    })
+
+    # X is a 2D array of features. We need to add them as separate columns:
+    feature_columns = [f'feat_{i}' for i in range(X.shape[1])]
+    df_features = pd.DataFrame(X, columns=feature_columns)
+    df_all = pd.concat([df_all, df_features], axis=1)
+
+    # 4) Sort by 'time' so that we have one global chronological order
+    df_all.sort_values(by='time', inplace=True)
+    df_all.reset_index(drop=True, inplace=True)
+
+    # -----------------------------
+    # 5) Perform a purely time-based split
+    # -----------------------------
+    # Find the row at the 70% index (or any ratio you wish) in chronological order:
+    split_index = int(len(df_all) * train_ratio)
+    split_time = df_all.loc[split_index, 'time']  # The time boundary
+
+    # Define train/test masks based on the actual 'time':
+    train_mask = df_all['time'] <= split_time
+    test_mask = df_all['time'] > split_time
+
+    # Create train sets
+    df_train = df_all[train_mask]
+    X_train = df_train[feature_columns].values
+    y_train = df_train['y'].values
+    times_train = df_train['time'].values
+    tickers_train = df_train['ticker'].values
+
+    # Create test sets
+    df_test = df_all[test_mask]
+    X_test = df_test[feature_columns].values
+    y_test = df_test['y'].values
+    times_test = df_test['time'].values
+    tickers_test = df_test['ticker'].values
+
+    # 6) Fit a simple linear model
     model = LinearRegression()
-    model.fit(X_train, y_train) 
+    model.fit(X_train, y_train)
+
+    return model, X_test, y_test, times_test, tickers_test
+
+    
+def predict(model, X_test, y_test, times_test, tickers_test, capital=1000000):
     
     # Predict returns on the test set.
     y_pred = model.predict(X_test)
@@ -123,20 +167,50 @@ def ml_trading_strategy(pivot_df, window_size=24, capital=1000000, train_ratio=0
         'time': portfolio_returns.index,
         'portfolio_value': portfolio_value,
         'strategy_return': portfolio_returns.values
-    }).set_index('time')
-
-    if plot:
-        # Plot the portfolio value over time.
-        plt.figure(figsize=(10, 6))
-        plt.plot(portfolio_df.index, portfolio_df['portfolio_value'], label='ML Strategy Portfolio')
-        plt.title('ML Trading Strategy Portfolio Value Over Time')
-        plt.xlabel('Time')
-        plt.ylabel('Portfolio Value ($)')
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
-    
+    }).set_index('time')    
     return model, portfolio_df, test_results
+
+def plot_wst(portfolio_df):
+    plt.figure(figsize=(10, 6))
+    plt.plot(portfolio_df.index, portfolio_df['portfolio_value'], label='ML Strategy Portfolio')
+    plt.title('ML Trading Strategy Portfolio Value Over Time')
+    plt.xlabel('Time')
+    plt.ylabel('Portfolio Value ($)')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_wst_and_index(df_index, portfolio_df):
+    """
+    Plots the portfolio values over time for both the index fund strategy and the ML trading strategy
+    on the same figure for easy comparison.
+    
+    Parameters:
+        df_index (pd.DataFrame): DataFrame containing the index fund portfolio history.
+                                 Expected to include a 'portfolio_value' column and a datetime column.
+        portfolio_df (pd.DataFrame): DataFrame containing the ML strategy portfolio history.
+                                     Its index is assumed to be datetime and it includes a 'portfolio_value' column.
+    """
+    # Ensure the index fund DataFrame uses a datetime index.
+    # If 'gmtTime' is a column, set it as the DataFrame index.
+    if 'gmtTime' in df_index.columns:
+        df_index = df_index.set_index('gmtTime')
+    
+    plt.figure(figsize=(10, 6))
+    
+    # Plot the Index Fund Portfolio Value.
+    plt.plot(df_index.index, df_index['portfolio_value'], label='Index Fund Portfolio', color='blue')
+    
+    # Plot the ML Strategy Portfolio Value.
+    plt.plot(portfolio_df.index, portfolio_df['portfolio_value'], label='ML Strategy Portfolio', color='orange')
+    
+    plt.title("Portfolio Value Comparison: ML Strategy vs. Index Fund")
+    plt.xlabel("Time")
+    plt.ylabel("Portfolio Value ($)")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 
 
 if __name__ == "__main__":
@@ -144,13 +218,25 @@ if __name__ == "__main__":
     df = load_csv_to_df('./given_resources/stockPrices_hourly.csv')
 
     # Pivot the CSV so that each column corresponds to a ticker's ask price.
-    # Essentially, each column is a time series of ask prices for a given stock. First column is the timestamp.
     ticker_col = df.columns[-1]
     pivot_df = df.pivot(index='gmtTime', columns=ticker_col, values='askMedian')
     pivot_df = pivot_df.sort_index().fillna(method='ffill')
 
-    # Run the ML trading strategy backtest
-    model, portfolio_df, test_results = ml_trading_strategy(pivot_df, window_size=24, capital=1000000, train_ratio=0.7)
+    #print(pivot_df)
+
+    # Train
+    model, X_test, y_test, times_test, tickers_test = train_wst_model(pivot_df, window_size=24, train_ratio=0.7, J = 3, Q = 1)
+    
+    # Predict and results
+    model, portfolio_df, test_results = predict(model, X_test, y_test, times_test, tickers_test, capital=1000000)
+    
+    # Extract index
+    df_index = load_csv_to_df('./given_resources/index_portfolio.csv')
+
+    # Plot results and compare against index
+    plot_wst_and_index(df_index, portfolio_df)
+
+    plot_wst(portfolio_df)
 
     # Save the backtesting results to CSV files.
     portfolio_df.to_csv('eliot/ml_strategy_portfolio.csv')

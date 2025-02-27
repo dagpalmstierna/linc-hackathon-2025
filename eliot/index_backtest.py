@@ -124,3 +124,25 @@ if __name__ == "__main__":
 
     # Save the portfolio history to a CSV file
     save_portfolio_history(portfolio_history, 'eliot/index_portfolio.csv')
+
+
+# The saved CSV file, "index_portfolio.csv", is structured as follows:
+
+# 1. "gmtTime" (datetime index): 
+#    - Represents the timestamp for each recorded market price.
+#    - This column is used as the index in the DataFrame.
+
+# 2. Columns for individual stock tickers:
+#    - Each column represents a different stock.
+#    - Values in these columns correspond to the stock's "askMedian" price at the given timestamp.
+#    - These values are used to track the price changes over time for each stock in the portfolio.
+
+# 3. "portfolio_value":
+#    - Represents the total value of the portfolio at each timestamp.
+#    - Computed as the sum of (stock price * shares held) for all stocks in the portfolio.
+#    - This column is used for analyzing the performance of the index strategy.
+
+# 4. "hourly_change":
+#    - Represents the change in portfolio value from the previous hour.
+#    - Computed using the difference between consecutive rows in the "portfolio_value" column.
+#    - Used for tracking hourly gains/losses of the portfolio.
