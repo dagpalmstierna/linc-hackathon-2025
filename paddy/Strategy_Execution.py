@@ -8,7 +8,7 @@ import pandas as pd
 import platform
 from momentum_strategy import momentum_strategy #rsi_strategy
 import traceback
-# lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
+# lh.init('5d5249da-7e7e-438b-a392-692f71364fd0')
 
 class Strategy:
     def __init__(self, func_poll_interval: tuple, strategy, data_source, order_manager=None, starting_balance=100000):
@@ -29,7 +29,7 @@ class Strategy:
     @staticmethod
     def get_portfolio() -> Dict[str, int]:
         url =  'https://hackathonlincapp.azurewebsites.net/api'+ '/account/portfolio'
-        body = {"api_key": "265d0b0b-7e97-44a7-9576-47789e8712b2" } # hard code this to avoid shared resources
+        body = {"api_key": "5d5249da-7e7e-438b-a392-692f71364fd0" } # hard code this to avoid shared resources
         response = requests.get(url, json=body)
         return response.json()
     
@@ -87,7 +87,7 @@ class Strategy:
               'ticker': ticker,
               'amount': amount,
               'days_to_cancel': days_to_cancel}
-        body = {'api_key': "265d0b0b-7e97-44a7-9576-47789e8712b2"}
+        body = {'api_key': "5d5249da-7e7e-438b-a392-692f71364fd0"}
 
         if price is not None:
             params['price'] = price
@@ -131,7 +131,7 @@ class Strategy:
               'ticker': ticker,
               'amount': amount,
               'days_to_cancel': days_to_cancel}
-        body = {'api_key': "265d0b0b-7e97-44a7-9576-47789e8712b2"}
+        body = {'api_key': "5d5249da-7e7e-438b-a392-692f71364fd0"}
 
         if price is not None:
             params['price'] = price
@@ -208,7 +208,7 @@ class DataCollection:
         params = {'days_back': days_back}
         if ticker:
             params['ticker'] = ticker
-        body = {"api_key": "265d0b0b-7e97-44a7-9576-47789e8712b2" } # hard code this to avoid shared resources
+        body = {"api_key": "5d5249da-7e7e-438b-a392-692f71364fd0" } # hard code this to avoid shared resources
         response = requests.get('https://hackathonlincapp.azurewebsites.net/api' + '/data', params=params, json=body)
 
         return response.json()
