@@ -6,7 +6,7 @@ import random
 import requests
 import pandas as pd
 import platform
-from momentum_strategy import momentum_strategy, rsi_strategy
+from momentum_strategy import momentum_strategy #rsi_strategy
 import traceback
 # lh.init('265d0b0b-7e97-44a7-9576-47789e8712b2')
 
@@ -22,6 +22,7 @@ class Strategy:
         time.sleep(1)
         all_tickers = self.get_all_tickers()
         self.portfolio = {ticker: 0 for ticker in all_tickers}
+        self.open_positions = {}
         self.order_manager = order_manager
         self.balance = starting_balance
     
@@ -55,11 +56,13 @@ class Strategy:
             start_time = time.monotonic()
             try:
                 print('PORTFOLIO', self.portfolio)
+                print("POSITIONS", self.open_positions)
                 historical_data = self.data_source.get_cached_data()
+               # self.check_stops()
                 strat_response = self.strategy_func(historical_data)
-                print(strat_response)
+                
                 if len(strat_response) > 0:
-                    current_prices = {ticker:{'ask': 50, 'bid': 50} for ticker in self.portfolio.keys()} # need to make calculate this from historical data
+                    current_prices = {stock_info["symbol"]:{'ask': stock_info["askMedian"], "bid": stock_info["bidMedian"]} for stock_info in historical_data[:-len(self.portfolio.keys())]} # need to make calculate this from historical data
                     order_to_execute = self.order_manager(strat_response, self.balance, self.portfolio, current_prices)
 
                     if order_to_execute != None:
@@ -93,12 +96,32 @@ class Strategy:
 
         response = requests.post(url_s, params=params, json=body)
         response_json = response.json()
-        print(response_json)
+       # print(response_json)
         if 'order_status' in response_json and response_json['order_status'] == 'completed':
             price = response_json['price']
             amount = response_json['amount']
             self.balance -= amount * price
             self.portfolio[ticker] += amount
+
+            if ticker in self.open_positions:
+                pos = self.open_positions[ticker]
+                # Weighted average cost
+                old_capital = pos["shares"] * pos["entry_price"]
+                new_capital = amount * price
+                total_shares = pos["shares"] + amount
+                new_avg_cost = (old_capital + new_capital) / total_shares
+                
+                pos["shares"] = total_shares
+                pos["entry_price"] = new_avg_cost
+
+            else:
+                self.open_positions[ticker] = {
+                    "shares": amount,
+                    "entry_price": price,
+                    "stop_loss": price * 0.99,  # example
+                    "take_profit": price * 1.2, # example
+                }
+            
             print(f"Bought {amount} of {ticker} at {price}")
             return response_json['order_status']
         return None
@@ -124,9 +147,26 @@ class Strategy:
             amount = response_json['amount']
             self.balance += amount * price
             self.portfolio[ticker] -= amount
+            del self.open_positions[ticker]
             print(f"Sold {amount} of {ticker} at {price}")
             return response_json['order_status']
         return None
+    
+    def check_stops(self):
+
+        for ticker, pos in list(self.open_positions.items()):
+            shares = pos["shares"]
+            if shares <= 0:
+                continue 
+            stop_loss = pos["stop_loss"]
+            # Use 'bid' as the "current price" to see if we've dropped below stop
+            price_data = self.get_current_price(ticker=ticker)
+            last_price = price_data.get("bidMedian")
+            if last_price is not None and last_price <= stop_loss:
+                print("nhhhhhsuhwuhkuhuodhuohduöhwuohöohw--------------------")
+                print(f"STOP LOSS TRIGGERED FOR {ticker}! Price={last_price:.2f} Stop={stop_loss:.2f}")
+                # Sell all shares
+                self.sell(ticker, shares, price=last_price)
 
     def start(self):
         if self.running.value:
@@ -241,6 +281,7 @@ class DataCollection:
                 historical_data = self.get_historical_data(100)
                # print(historical_data)
                 historical_processed = historical_data #self.process_data(historical_data)
+                print(historical_data)
                 with self.lock:  # Lock only when updating the cache
                     # self.cache.clear()  # Clear the dictionary
                     # self.cache.update(historical_processed)
@@ -291,6 +332,8 @@ if __name__ == "__main__":
 
     def order_manager_example(strategy_response, balance, portfolio, current_price):
         for action, ticker in strategy_response:
+           
+           
             if action == 'sell' and portfolio[ticker] > 0:
                 amount_stock_we_have = portfolio[ticker]
                 return ('sell', ticker, amount_stock_we_have)
@@ -304,7 +347,8 @@ if __name__ == "__main__":
                 print('SELL but had no stock')
         return None
     
-    
+    #def order_manager_momentum_strategy(strategy_response, balance, portfolio, current_price):
+        
     data_collect = DataCollection(0.7)
     data_collect.start()
     time.sleep(1)
@@ -312,7 +356,7 @@ if __name__ == "__main__":
     # strat = Strategy(1, test, data_collect, order_manager_example)
     # strat.start()
 
-    strat2 = Strategy(1, rsi_strategy, data_collect, order_manager_example)
+    strat2 = Strategy(1, momentum_strategy, data_collect, order_manager_example)
     strat2.start()
     
 

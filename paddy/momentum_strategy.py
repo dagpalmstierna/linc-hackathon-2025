@@ -3,6 +3,7 @@ import talib as ta
 import hackathon_linc as lh
 import numpy as np
 
+#bollinger bands kanske
 #tweeka lokback, lower_pct, upper_pct etc. 
 
 def dynamic_rsi_thresholds(rsi_series, lower_pct=25, upper_pct=75, lookback=100):
@@ -60,11 +61,10 @@ def momentum_strategy(historical_data):
     df["macd_line"]   = macd_line
     df["macd_signal"] = macd_signal
     df["macd_hist"]   = macd_hist  
-   
-    stock_dfs = {}
 
-    for symbol, stock_df in stock_dfs.items:
-        df_stock = df[df["symbol"] == symbol].copy()  
+    stock_dfs = {}
+    for symbol in df["symbol"].unique():
+        df_stock = df[df["symbol"] == symbol].copy()
         stock_dfs[symbol] = df_stock
     
     recommendations = {}
@@ -85,49 +85,49 @@ def momentum_strategy(historical_data):
 
         if macd_val > signal_val and latest_rsi < lower_threshold:
             # 'Buy' signal
-            print("buy")
+            
             recommendations[symbol] = ['buy', latest_rsi]
         elif macd_val < signal_val and latest_rsi > upper_threshold:
             # 'Sell' signal
-            print("Sell")
+        
             recommendations[symbol] = ['sell', latest_rsi]
         
-    return recommendations
+    return recommendation(recommendations)
 
-def rsi_strategy(historical_data):
+# def rsi_strategy(historical_data):
     
-    df = pd.DataFrame(historical_data)
-    df.index = pd.to_datetime(df["gmtTime"])
-    df["price"] = (df["askMedian"] + df["bidMedian"]) / 2
+#     df = pd.DataFrame(historical_data)
+#     df.index = pd.to_datetime(df["gmtTime"])
+#     df["price"] = (df["askMedian"] + df["bidMedian"]) / 2
 
-    df["rsi"] = ta.RSI(df["price"], timeperiod=14)
+#     df["rsi"] = ta.RSI(df["price"], timeperiod=14)
     
-    macd_line, macd_signal, macd_hist = ta.MACD(
-        df["price"],
-        fastperiod=12,
-        slowperiod=26,
-        signalperiod=9
-    )
+#     macd_line, macd_signal, macd_hist = ta.MACD(
+#         df["price"],
+#         fastperiod=12,
+#         slowperiod=26,
+#         signalperiod=9
+#     )
 
-    stock_dfs = {}
+#     stock_dfs = {}
 
-    for symbol in df["symbol"].unique():
-        df_stock = df[df["symbol"] == symbol].copy()  
-        stock_dfs[symbol] = df_stock
+#     for symbol in df["symbol"].unique():
+#         df_stock = df[df["symbol"] == symbol].copy()  
+#         stock_dfs[symbol] = df_stock
     
-    report = {}
+#     report = {}
     
-    for key in stock_dfs.keys():
+#     for key in stock_dfs.keys():
 
-        current_date = stock_dfs[key].iloc[-1]
-        rsi_value = current_date["rsi"]
+#         current_date = stock_dfs[key].iloc[-1]
+#         rsi_value = current_date["rsi"]
         
-        if rsi_value < 45:
-            report[key] = ['buy', np.abs(rsi_value-50)]
+#         if rsi_value < 45:
+#             report[key] = ['buy', np.abs(rsi_value-50)]
 
-        elif rsi_value > 55:
-            report[key] = ['sell', np.abs(rsi_value-50)]
-    return recommendation(report)
+#         elif rsi_value > 55:
+#             report[key] = ['sell', np.abs(rsi_value-50)]
+#     return recommendation(report)
 
 def recommendation(report):
     if report == {}:
