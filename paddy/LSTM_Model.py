@@ -1,11 +1,12 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.models import Sequential, load_model, model_from_json
 from tensorflow.keras.layers import LSTM, Dropout, Dense
 from tensorflow.keras.optimizers import Adam
 import hackathon_linc as lh
 import math
+import joblib
 
 
 class LSTMModelManager:
@@ -22,10 +23,24 @@ class LSTMModelManager:
             stock_name = model_file.split('_')[0]
             model_path = f"/home/paddy/Documents/linc_hackathon/linc_hackathon_2025/paddy/{model_file}_lstm_model.keras"
             print(model_path)
-            self.models[stock_name] = load_model(model_path)
+            try:
+                self.models[stock_name] = self.custom_load_model(model_path)
+            except Exception as e:
+                print(f"Error loading model for {stock_name}: {e}")
+
+            self.scalers[stock_name] = joblib.load(f"/home/paddy/Documents/linc_hackathon/linc_hackathon_2025/paddy/{model_file}_scaler.pkl")
             print(f"Loaded model for {stock_name} from {model_path}")
+    
+    def custom_load_model(self, model_path):
+        with open(model_path, 'r') as f:
+            config = f.read()
+        config = config.replace('"batch_shape":', '"batch_input_shape":')
+        model = model_from_json(config)
+        model.load_weights(model_path.replace('.json', '.keras'))
+        return model
 
     def preprocess_data(self, df):
+        scaler = self.scalars[df['symbol'].iloc[0]]
         if self.features is None:
             self.features = [col for col in df.columns if col not in ['gmtTime', 'symbol', 'target']]
 
@@ -68,8 +83,8 @@ class LSTMModelManager:
         df_stock = df_stock.dropna()
 
         df = df_stock.copy()    
-        scaler = StandardScaler()
-        X = scaler.fit_transform()
+        
+        X = scaler.transform(X)
         X = df[self.features]
 
         X_seq = []
