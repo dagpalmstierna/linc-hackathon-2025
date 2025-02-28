@@ -356,7 +356,7 @@ if __name__ == "__main__":
     # strat = Strategy(1, test, data_collect, order_manager_example)
     # strat.start()
 
-    strat2 = Strategy(1, momentum_strategy, data_collect, order_manager_example)
+    strat2 = Strategy(1, momentum_strategy, data_collect, order_manager_example, starting_balance = 10000)
     strat2.start()
     
 
