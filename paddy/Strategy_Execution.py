@@ -281,7 +281,7 @@ class DataCollection:
                 historical_data = self.get_historical_data(100)
                # print(historical_data)
                 historical_processed = historical_data #self.process_data(historical_data)
-                print(historical_data)
+                # print(historical_data)
                 with self.lock:  # Lock only when updating the cache
                     # self.cache.clear()  # Clear the dictionary
                     # self.cache.update(historical_processed)
