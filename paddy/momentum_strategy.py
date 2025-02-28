@@ -82,15 +82,15 @@ def momentum_strategy(historical_data):
         latest_rsi = latest_row["rsi"]
         macd_val   = latest_row["macd_line"]
         signal_val = latest_row["macd_signal"]
-
+        mid_point = (upper_threshold + lower_threshold) / 2
+        
         if macd_val > signal_val and latest_rsi < lower_threshold:
             # 'Buy' signal
-            
-            recommendations[symbol] = ['buy', latest_rsi]
+            recommendations[symbol] = ['buy', np.abs(latest_rsi - mid_point)]
         elif macd_val < signal_val and latest_rsi > upper_threshold:
             # 'Sell' signal
         
-            recommendations[symbol] = ['sell', latest_rsi]
+            recommendations[symbol] = ['sell', np.abs(latest_rsi - mid_point)]
         
     return recommendation(recommendations)
 

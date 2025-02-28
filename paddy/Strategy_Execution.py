@@ -62,10 +62,11 @@ class Strategy:
                 self.check_stops(current_prices)
                 strat_response = self.strategy_func(historical_data)
                 print('STRAT RESPONSE', strat_response)
-                print("BALANCE", self.balance)
+
+                # print("BALANCE", self.balance)
                 
                 if len(strat_response) > 0:
-                    print('CURRENT PRICES', current_prices)
+                   
                     order_to_execute = self.order_manager(strat_response, self.balance, self.portfolio, current_prices)
 
                     if order_to_execute != None:
@@ -97,38 +98,34 @@ class Strategy:
             params['price'] = price
 
         url_s = 'https://hackathonlincapp.azurewebsites.net/api' + '/order/'
-
+        print("TRIED BUYING", ticker)
         response = requests.post(url_s, params=params, json=body)
         response_json = response.json()
-       # print(response_json)
+    
+        print(response_json)
         if 'order_status' in response_json and response_json['order_status'] == 'completed':
             price = response_json['price']
             amount = response_json['amount']
             self.balance -= amount * price
             self.portfolio[ticker] += amount
             # print(response_json)
-            # print(self.open_positions)
+            #print(self.open_positions)
 
 
             if ticker in self.open_positions:
                 pos = self.open_positions[ticker]
-                # Weighted average cost
-                old_capital = pos["shares"] * pos["entry_price"]
-                new_capital = amount * price
-                total_shares = pos["shares"] + amount
-                new_avg_cost = (old_capital + new_capital) / total_shares
-                
-                pos["shares"] = total_shares
-                pos["entry_price"] = new_avg_cost
+
+                # pct_return = (price / pos["entry_price"] - 1) * 100
+                # self.open_positions[ticker]["return"] = pct_return
+                pos["cost"] += amount * price
+                pos["shares"] += amount
 
             else:
                 self.open_positions[ticker] = {
                     "shares": amount,
-                    "entry_price": price,
-                    "stop_loss": price * 0.99,  # example
-                    "take_profit": price * 1.2, # example
+                    "cost": amount * price,
                 }
-            
+    
             print(f"Bought {amount} of {ticker} at {price}")
             return response_json['order_status']
         return None
@@ -147,7 +144,8 @@ class Strategy:
 
         response = requests.post(url_s, params=params, json=body)
         response_json = response.json()
-        # print(response_json)
+        print("sell response", response_json)
+        
 
         if 'order_status' in response_json and response_json['order_status'] == 'completed':
             price = response_json['price']
@@ -160,24 +158,25 @@ class Strategy:
         return None
     
     def check_stops(self, price_data):
-        
+        #print("price data", price_data)
+        #print("POSITIONS", self.open_positions)
         for ticker, pos in self.open_positions.items():
             
             shares = pos["shares"]
             if shares <= 0:
-                continue 
-            stop_loss = pos["stop_loss"]
-            # Use 'bid' as the "current price" to see if we've dropped below stop
-            # price_data = self.get_current_price(ticker=ticker)
-            last_price = price_data[ticker]['bid']
-            # print(f"LAST PRICE: {last_price}")
-            # print(f"Price: {last_price} Stop: {stop_loss}")
-            if last_price is not None and last_price <= stop_loss:
-                print("nhhhhhsuhwuhkuhuodhuohduöhwuohöohw--------------------")
-                print(f"STOP LOSS TRIGGERED FOR {ticker}! Price={last_price:.2f} Stop={stop_loss:.2f}")
-                # Sell all shares
+                continue
+            current_price = price_data[ticker]['bid']
+
+            current_return = (current_price * pos["shares"]/ pos["cost"]) * 100
+            
+           
+
+            if current_return is not None and (current_return < -12.5 or current_return > 12.5):
+                #print(f"STOP LOSS TRIGGERED FOR {ticker}! Price={current_price:.2f} Stop={stop_loss:.2f}")
+                print(f"STOP LOSS triggered For {ticker}! Price = {current_price:.2f}")                # Sell all shares
                 self_resp = self.sell(ticker, shares)
                 print(self_resp)
+          
 
     def start(self):
         if self.running.value:
@@ -343,15 +342,14 @@ if __name__ == "__main__":
 
     def order_manager_example(strategy_response, balance, portfolio, current_price):
         for action, ticker in strategy_response:
-           
-           
+        
             if action == 'sell' and portfolio[ticker] > 0:
                 amount_stock_we_have = portfolio[ticker]
                 return ('sell', ticker, amount_stock_we_have)
             elif action == 'buy':
-                print("TRIED BUYING")
                 curr_stock_price = current_price[ticker]['ask']
-                amount = int((balance*0.5) // curr_stock_price)
+                #amount = int((balance*0.01) // curr_stock_price)
+                amount = int(1000 // curr_stock_price)
                 # print('BUY AMOUNT', amount)
                 return ('buy', ticker, amount)
             elif action == 'sell':
@@ -369,6 +367,7 @@ if __name__ == "__main__":
 
     strat2 = Strategy(1, momentum_strategy, data_collect, order_manager_example, starting_balance = 10000)
     strat2.start()
+
     
 
     # time.sleep(0.75)
