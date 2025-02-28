@@ -56,13 +56,15 @@ class Strategy:
             start_time = time.monotonic()
             try:
                 print('PORTFOLIO', self.portfolio)
-                print("POSITIONS", self.open_positions)
+                # print("POSITIONS", self.open_positions)
                 historical_data = self.data_source.get_cached_data()
-               # self.check_stops()
+                current_prices = {stock_info["symbol"]:{'ask': stock_info["askMedian"], "bid": stock_info["bidMedian"]} for stock_info in historical_data[:-len(self.portfolio.keys())]} # need to make calculate this from historical data
+                self.check_stops(current_prices)
                 strat_response = self.strategy_func(historical_data)
+                print("BALANCE", self.balance)
                 
                 if len(strat_response) > 0:
-                    current_prices = {stock_info["symbol"]:{'ask': stock_info["askMedian"], "bid": stock_info["bidMedian"]} for stock_info in historical_data[:-len(self.portfolio.keys())]} # need to make calculate this from historical data
+                    print('CURRENT PRICES', current_prices)
                     order_to_execute = self.order_manager(strat_response, self.balance, self.portfolio, current_prices)
 
                     if order_to_execute != None:
@@ -83,6 +85,7 @@ class Strategy:
             time.sleep(max(0.01, sleep_time))
     
     def buy(self, ticker, amount, price=None, days_to_cancel=1):
+        amount = max(amount,1)
         params = {'type': 'buy',
               'ticker': ticker,
               'amount': amount,
@@ -102,6 +105,9 @@ class Strategy:
             amount = response_json['amount']
             self.balance -= amount * price
             self.portfolio[ticker] += amount
+            # print(response_json)
+            # print(self.open_positions)
+
 
             if ticker in self.open_positions:
                 pos = self.open_positions[ticker]
@@ -140,7 +146,7 @@ class Strategy:
 
         response = requests.post(url_s, params=params, json=body)
         response_json = response.json()
-        print(response_json)
+        # print(response_json)
 
         if 'order_status' in response_json and response_json['order_status'] == 'completed':
             price = response_json['price']
@@ -152,16 +158,20 @@ class Strategy:
             return response_json['order_status']
         return None
     
-    def check_stops(self):
-
-        for ticker, pos in list(self.open_positions.items()):
+    def check_stops(self, price_data):
+        
+        for ticker, pos in self.open_positions.items():
+            
             shares = pos["shares"]
             if shares <= 0:
                 continue 
             stop_loss = pos["stop_loss"]
             # Use 'bid' as the "current price" to see if we've dropped below stop
-            price_data = self.get_current_price(ticker=ticker)
-            last_price = price_data.get("bidMedian")
+            print(f"GOT TO HERE: {ticker}" )
+            # price_data = self.get_current_price(ticker=ticker)
+            last_price = price_data[ticker]['bid']
+            print(f"LAST PRICE: {last_price}")
+            print(f"Price: {last_price} Stop: {stop_loss}")
             if last_price is not None and last_price <= stop_loss:
                 print("nhhhhhsuhwuhkuhuodhuohduöhwuohöohw--------------------")
                 print(f"STOP LOSS TRIGGERED FOR {ticker}! Price={last_price:.2f} Stop={stop_loss:.2f}")
@@ -340,7 +350,7 @@ if __name__ == "__main__":
             elif action == 'buy':
                 print("TRIED BUYING")
                 curr_stock_price = current_price[ticker]['ask']
-                amount = int((balance*0.01) // curr_stock_price)
+                amount = int((balance*0.5) // curr_stock_price)
                 # print('BUY AMOUNT', amount)
                 return ('buy', ticker, amount)
             elif action == 'sell':
