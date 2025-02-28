@@ -55,12 +55,13 @@ class Strategy:
         while self.running.value:
             start_time = time.monotonic()
             try:
-                print('PORTFOLIO', self.portfolio)
+                # print('PORTFOLIO', self.portfolio)
                 # print("POSITIONS", self.open_positions)
                 historical_data = self.data_source.get_cached_data()
                 current_prices = {stock_info["symbol"]:{'ask': stock_info["askMedian"], "bid": stock_info["bidMedian"]} for stock_info in historical_data[:-len(self.portfolio.keys())]} # need to make calculate this from historical data
                 self.check_stops(current_prices)
                 strat_response = self.strategy_func(historical_data)
+                print('STRAT RESPONSE', strat_response)
                 print("BALANCE", self.balance)
                 
                 if len(strat_response) > 0:
@@ -167,16 +168,16 @@ class Strategy:
                 continue 
             stop_loss = pos["stop_loss"]
             # Use 'bid' as the "current price" to see if we've dropped below stop
-            print(f"GOT TO HERE: {ticker}" )
             # price_data = self.get_current_price(ticker=ticker)
             last_price = price_data[ticker]['bid']
-            print(f"LAST PRICE: {last_price}")
-            print(f"Price: {last_price} Stop: {stop_loss}")
+            # print(f"LAST PRICE: {last_price}")
+            # print(f"Price: {last_price} Stop: {stop_loss}")
             if last_price is not None and last_price <= stop_loss:
                 print("nhhhhhsuhwuhkuhuodhuohduöhwuohöohw--------------------")
                 print(f"STOP LOSS TRIGGERED FOR {ticker}! Price={last_price:.2f} Stop={stop_loss:.2f}")
                 # Sell all shares
-                self.sell(ticker, shares, price=last_price)
+                self_resp = self.sell(ticker, shares)
+                print(self_resp)
 
     def start(self):
         if self.running.value:
