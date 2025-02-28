@@ -8,3 +8,6 @@ kymatio
 torch
 scikit-learn
 ta-lib
+tensorflow
+keras
+scikit-learn
