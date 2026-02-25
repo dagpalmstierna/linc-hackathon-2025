@@ -10,4 +10,4 @@ scikit-learn
 ta-lib
 tensorflow
 keras
-scikit-learn
+joblib

@@ -1,3 +1,45 @@
-winner_2024/
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+
+# Virtual environment
 venv/
-eliot/stockPrices_hourly.csv
+env/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverrideFile
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Data (large files - can be downloaded from LINC)
+# Uncomment below to exclude from version control:
+# data/Historical_Data.csv
+# data/stockPrices_hourly.csv
+
+# Generated output files
+data/ml_strategy_portfolio.csv
+data/ml_strategy_test_results.csv
+logs/*.txt
+
+# Old / development directories (superseded by the new structure)
+winner_2024/
+dag/
+paddy/
+eliot/
+Douglas/
+given_resources/
+
+# Root-level leftovers
+README
+data.py
+manual_handling.ipynb
+stockPrices_hourly.csv
+
+# Temporary / lock files
+*.lock
+.~lock.*
