@@ -1,6 +1,6 @@
-# LINC Hackathon 2025
+# LINC Hackathon 2025 Winning Team
 
-LINC-STEM algorithmic trading hackathon 2025 - Team Algo-rythmics contribution.
+Winning submission by team Algo-rythmics for the LINC-STEM 2025 algorithmic trading hackathon.
 
 Team: Dag Palmstierna, Paddy Fernandez de Viana, Eliot Montesino Petrén, Douglas Eklund
 
